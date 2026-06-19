@@ -7,25 +7,25 @@
 访问： http://127.0.0.1:5000
 
 路由总览：
-  前台：/ /login /wechat/login /wechat/callback /demo-login /logout
+  前台：/ /login /register /logout
         /content/<category> /post/<id> /download/<id>
   后台：/admin /admin/new /admin/edit/<id> /admin/delete/<id>
 """
 
 import os
+import re
 import functools
 from datetime import datetime
-from urllib.parse import quote
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
     session, flash, jsonify, send_from_directory, abort, current_app
 )
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
 from models import get_db, init_db
-import wechat_auth
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -42,7 +42,6 @@ def inject_globals():
             "name": Config.SITE_NAME,
             "slogan": Config.SITE_SLOGAN,
             "desc": Config.SITE_DESC,
-            "demo_mode": Config.WECHAT_DEMO_MODE,
         },
         "current_user": get_current_user(),
         "year": datetime.now().year,
@@ -82,27 +81,7 @@ def admin_required(f):
     return wrapper
 
 
-def upsert_user(openid, nickname, avatar="", unionid=""):
-    """根据 openid 查找或创建用户，返回 user row"""
-    db = get_db()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    u = db.execute("SELECT * FROM users WHERE openid=?", (openid,)).fetchone()
-    if u:
-        db.execute("UPDATE users SET last_login=?, nickname=COALESCE(NULLIF(?, ''), nickname) WHERE id=?",
-                   (now, nickname, u["id"]))
-        db.commit()
-        row = db.execute("SELECT * FROM users WHERE id=?", (u["id"],)).fetchone()
-        db.close()
-        return row
-    # 新用户默认 member
-    db.execute(
-        "INSERT INTO users(openid,unionid,nickname,avatar,role,created_at,last_login) VALUES(?,?,?,?,?,?,?)",
-        (openid, unionid, nickname or "新用户", avatar, "member", now, now),
-    )
-    db.commit()
-    row = db.execute("SELECT * FROM users WHERE openid=?", (openid,)).fetchone()
-    db.close()
-    return row
+EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 def allowed_file(filename):
@@ -183,55 +162,91 @@ def download(pid):
 
 
 # ============================================================
-# 登录 / 登出
+# 注册 / 登录 / 登出
 # ============================================================
-@app.route("/login")
+# 演示账号（登录页一键填充，方便快速体验）
+DEMO_ACCOUNTS = [
+    {"email": "admin@shenlan.community", "password": "admin123", "nickname": "深蓝管理员", "role": "admin"},
+    {"email": "helen@demo.com",  "password": "demo123", "nickname": "Helen", "role": "member"},
+    {"email": "david@demo.com",  "password": "demo123", "nickname": "David", "role": "member"},
+    {"email": "wendy@demo.com",  "password": "demo123", "nickname": "Wendy", "role": "member"},
+]
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        next_url = request.form.get("next") or url_for("index")
+
+        if not email or not password:
+            flash("请输入邮箱和密码", "warning")
+            return redirect(url_for("login", next=next_url))
+
+        db = get_db()
+        u = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        db.close()
+
+        if not u or not check_password_hash(u["password_hash"], password):
+            flash("邮箱或密码错误", "danger")
+            return redirect(url_for("login", next=next_url))
+
+        session["uid"] = u["id"]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db = get_db()
+        db.execute("UPDATE users SET last_login=? WHERE id=?", (now, u["id"]))
+        db.commit()
+        db.close()
+        flash(f"欢迎回来，{u['nickname']}！", "success")
+        return redirect(next_url)
+
     next_url = request.args.get("next", "")
-    return render_template("login.html", next_url=next_url,
-                           wechat_url=wechat_auth.build_authorize_url() if not Config.WECHAT_DEMO_MODE else "",
-                           demo_users=wechat_auth.get_demo_users())
+    return render_template("login.html", next_url=next_url, demo_accounts=DEMO_ACCOUNTS)
 
 
-@app.route("/wechat/login")
-def wechat_login():
-    """跳转到微信授权页"""
-    if Config.WECHAT_DEMO_MODE:
-        return redirect(url_for("login"))
-    return redirect(wechat_auth.build_authorize_url())
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        nickname = request.form.get("nickname", "").strip()
+        password = request.form.get("password", "")
+        password2 = request.form.get("password2", "")
 
+        # 校验
+        if not EMAIL_RE.match(email):
+            flash("邮箱格式不正确", "danger")
+            return redirect(url_for("register"))
+        if not nickname:
+            flash("请填写昵称", "danger")
+            return redirect(url_for("register"))
+        if len(password) < 6:
+            flash("密码至少 6 位", "danger")
+            return redirect(url_for("register"))
+        if password != password2:
+            flash("两次输入的密码不一致", "danger")
+            return redirect(url_for("register"))
 
-@app.route("/wechat/callback")
-def wechat_callback():
-    """微信授权回调"""
-    code = request.args.get("code")
-    if not code:
-        flash("未收到微信授权码", "danger")
-        return redirect(url_for("login"))
-    try:
-        info = wechat_auth.get_user_by_code(code)
-        user = upsert_user(info["openid"], info["nickname"], info["avatar"], info["unionid"])
-        session["uid"] = user["id"]
-        flash(f"欢迎回来，{user['nickname']}！", "success")
+        db = get_db()
+        if db.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone():
+            db.close()
+            flash("该邮箱已注册，请直接登录", "warning")
+            return redirect(url_for("login"))
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(
+            "INSERT INTO users(email,password_hash,nickname,avatar,role,created_at,last_login) VALUES(?,?,?,?,?,?,?)",
+            (email, generate_password_hash(password), nickname, None, "member", now, now),
+        )
+        db.commit()
+        uid = db.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()[0]
+        db.close()
+
+        session["uid"] = uid
+        flash(f"注册成功，欢迎加入{Config.SITE_NAME}，{nickname}！", "success")
         return redirect(url_for("index"))
-    except Exception as e:
-        flash(f"微信登录失败：{e}", "danger")
-        return redirect(url_for("login"))
 
-
-@app.route("/demo-login", methods=["POST"])
-def demo_login():
-    """演示模式登录：选一个预设账号直接登录"""
-    openid = request.form.get("openid")
-    demo = {u["openid"]: u for u in wechat_auth.get_demo_users()}
-    if openid not in demo:
-        flash("演示账号无效", "danger")
-        return redirect(url_for("login"))
-    user = upsert_user(openid, demo[openid]["nickname"], demo[openid]["avatar"])
-    session["uid"] = user["id"]
-    flash(f"已以演示账号「{user['nickname']}」登录", "success")
-    next_url = request.form.get("next") or url_for("index")
-    return redirect(next_url)
+    return render_template("register.html")
 
 
 @app.route("/logout")
@@ -373,8 +388,8 @@ if __name__ == "__main__":
     init_db()
     print("=" * 50)
     print(f"  {Config.SITE_NAME} 启动中...")
-    print(f"  微信登录模式: {'演示模式（未配置真实凭证）' if Config.WECHAT_DEMO_MODE else '真实微信登录'}")
+    print(f"  登录方式: 邮箱注册登录")
     print(f"  访问地址: http://127.0.0.1:5000")
-    print(f"  管理员 openid: {Config.ADMIN_OPENID}")
+    print(f"  管理员账号: admin@shenlan.community / admin123")
     print("=" * 50)
     app.run(host="0.0.0.0", port=5000, debug=True)

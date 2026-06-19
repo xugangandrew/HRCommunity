@@ -30,10 +30,13 @@
             <span class="uname">{{ current_user['nickname'] }}</span>
             {% if current_user['role'] == 'admin' %}<span class="badge-admin">管理员</span>{% endif %}
           </div>
+          {% if current_user['role'] == 'admin' %}
           <a href="{{ url_for('admin') }}" class="btn btn-ghost btn-sm">管理</a>
+          {% endif %}
           <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">退出</a>
         {% else %}
-          <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">微信登录</a>
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">登录</a>
+          <a href="{{ url_for('register') }}" class="btn btn-outline btn-sm">注册</a>
         {% endif %}
       </div>
     </div>
@@ -59,9 +62,7 @@
   <footer class="site-footer">
     <div class="container">
       <p>© {{ year }} {{ site.name }} · {{ site.slogan }}</p>
-      {% if site.demo_mode %}
-      <p class="demo-tip">当前为演示模式：未配置微信开放平台凭证，可用演示账号登录体验。配置方法见 README.md。</p>
-      {% endif %}
+      <p class="demo-tip">HR 专业社群 · 注册登录后即可浏览全部资讯、资料与工具</p>
     </div>
   </footer>
 

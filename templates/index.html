@@ -11,7 +11,7 @@
       <a href="{{ url_for('content_list', category='news') }}" class="btn btn-primary">浏览信息资讯</a>
       <a href="{{ url_for('content_list', category='tool') }}" class="btn btn-outline">查看效率工具</a>
     {% else %}
-      <a href="{{ url_for('login') }}" class="btn btn-primary">微信登录后查看</a>
+      <a href="{{ url_for('register') }}" class="btn btn-primary">注册 / 登录后查看</a>
       <a href="#sections" class="btn btn-outline">了解社群</a>
     {% endif %}
   </div>

@@ -7,51 +7,56 @@
     <h2>欢迎来到{{ site.name }}</h2>
     <p class="sub">{{ site.slogan }}</p>
 
-    {% if not site.demo_mode %}
-      <!-- 真实微信登录 -->
-      <a href="{{ wechat_url }}" class="wx-login-btn">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8.7 6.5c.5 0 1-.4 1-1s-.5-1-1-1c-.6 0-1 .4-1 1s.4 1 1 1zm6.6 0c.5 0 1-.4 1-1s-.5-1-1-1c-.6 0-1 .4-1 1s.4 1 1 1zM2 10.5C2 6.4 6 3 11 3s9 3.4 9 7.5c0 .3 0 .6-.1.9-.6-.4-1.3-.7-2-.9.1 0 .1 0 .1-.1C18 7.6 14.9 5 11 5S4 7.6 4 10.5c0 1.6.8 3.1 2.2 4.2.3.2.4.6.3.9-.2.6-.5 1.2-.9 1.7.8-.3 1.6-.7 2.3-1.2.2-.1.4-.2.6-.2.2 0 .3 0 .5.1.7.2 1.4.3 2.1.4-.1.4-.1.7-.1 1.1v.2c-.5-.1-1.1-.2-1.6-.4-1.1.7-2.4 1.2-3.7 1.4-.1 0-.2.1-.3.1-.3 0-.5-.1-.7-.4-.3-.4 0-.8.2-1.2-1.6-1.2-2.6-3-2.6-4.9zM22 16.5c0-3-3.1-5.5-7-5.5s-7 2.5-7 5.5 3.1 5.5 7 5.5c.8 0 1.5-.1 2.2-.3.6.4 1.3.7 2 .9-.2-.3-.4-.6-.5-.9-.1-.3 0-.6.3-.8 1.9-1 3-2.6 3-4.4z"/></svg>
-        微信扫码登录
-      </a>
-      <p class="login-note">使用微信扫码完成登录/注册</p>
-    {% else %}
-      <!-- 演示模式 -->
-      <form action="{{ url_for('demo_login') }}" method="post" class="demo-users">
-        <input type="hidden" name="next" value="{{ next_url }}">
-        <div style="font-size:13px;color:var(--c-text-light);margin-bottom:8px;font-weight:500">以普通成员身份体验</div>
-        {% for u in demo_users if u.role == 'member' %}
-        <button type="submit" name="openid" value="{{ u.openid }}" class="demo-user-btn">
-          <span class="du-avatar">{{ u.nickname[:1] }}</span>
-          <span class="du-info">
-            <span class="du-name">{{ u.nickname }}</span>
-            <span class="du-desc">{{ u.desc }}</span>
-          </span>
-          <span style="color:var(--c-accent);font-size:13px">进入 →</span>
-        </button>
-        {% endfor %}
-        <div class="demo-divider">管理员</div>
-        {% for u in demo_users if u.role == 'admin' %}
-        <button type="submit" name="openid" value="{{ u.openid }}" class="demo-user-btn" style="border-color:var(--c-accent);background:var(--c-accent-light)">
-          <span class="du-avatar" style="background:linear-gradient(135deg,#1a3a6b,#2d7af6)">{{ u.nickname[:1] }}</span>
-          <span class="du-info">
-            <span class="du-name">{{ u.nickname }} <span class="badge-admin">管理员</span></span>
-            <span class="du-desc">{{ u.desc }}</span>
-          </span>
-          <span style="color:var(--c-primary);font-size:13px;font-weight:600">进入 →</span>
-        </button>
-        {% endfor %}
-      </form>
-      <div class="demo-divider">或</div>
-      <a href="{{ url_for('wechat_login') }}" class="wx-login-btn" style="background:#9aa6b5;cursor:not-allowed" onclick="alert('当前为演示模式，未配置微信开放平台凭证。\n请先以演示账号登录体验，配置方法见 README.md。');return false;">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8.7 6.5c.5 0 1-.4 1-1s-.5-1-1-1c-.6 0-1 .4-1 1s.4 1 1 1zm6.6 0c.5 0 1-.4 1-1s-.5-1-1-1c-.6 0-1 .4-1 1s.4 1 1 1zM2 10.5C2 6.4 6 3 11 3s9 3.4 9 7.5c0 .3 0 .6-.1.9-.6-.4-1.3-.7-2-.9.1 0 .1 0 .1-.1C18 7.6 14.9 5 11 5S4 7.6 4 10.5c0 1.6.8 3.1 2.2 4.2.3.2.4.6.3.9-.2.6-.5 1.2-.9 1.7.8-.3 1.6-.7 2.3-1.2.2-.1.4-.2.6-.2.2 0 .3 0 .5.1.7.2 1.4.3 2.1.4-.1.4-.1.7-.1 1.1v.2c-.5-.1-1.1-.2-1.6-.4-1.1.7-2.4 1.2-3.7 1.4-.1 0-.2.1-.3.1-.3 0-.5-.1-.7-.4-.3-.4 0-.8.2-1.2-1.6-1.2-2.6-3-2.6-4.9zM22 16.5c0-3-3.1-5.5-7-5.5s-7 2.5-7 5.5 3.1 5.5 7 5.5c.8 0 1.5-.1 2.2-.3.6.4 1.3.7 2 .9-.2-.3-.4-.6-.5-.9-.1-.3 0-.6.3-.8 1.9-1 3-2.6 3-4.4z"/></svg>
-        微信扫码登录（未配置）
-      </a>
-      <p class="login-note">
-        当前为<b>演示模式</b>，可点击上方任意演示账号一键登录体验全部功能。<br>
-        建议先用「深蓝管理员」登录，体验发布与管理内容。<br>
-        配置真实微信登录的方法详见 README.md。
-      </p>
-    {% endif %}
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" name="email" class="form-control" required autofocus
+               placeholder="请输入注册邮箱" value="">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" name="password" class="form-control" required
+               placeholder="请输入密码">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:16px">登 录</button>
+    </form>
+
+    <div style="text-align:center;margin-top:16px;font-size:14px">
+      还没有账号？<a href="{{ url_for('register') }}">立即注册 →</a>
+    </div>
+
+    <div class="demo-divider">演示账号（点击一键填充）</div>
+    <div class="demo-users">
+      {% for a in demo_accounts if a.role == 'member' %}
+      <button type="button" class="demo-user-btn" onclick="fillDemo('{{ a.email }}','{{ a.password }}')">
+        <span class="du-avatar">{{ a.nickname[:1] }}</span>
+        <span class="du-info">
+          <span class="du-name">{{ a.nickname }}</span>
+          <span class="du-desc">{{ a.email }} · 普通成员</span>
+        </span>
+        <span style="color:var(--c-accent);font-size:13px">填充</span>
+      </button>
+      {% endfor %}
+      {% for a in demo_accounts if a.role == 'admin' %}
+      <button type="button" class="demo-user-btn" style="border-color:var(--c-accent);background:var(--c-accent-light)" onclick="fillDemo('{{ a.email }}','{{ a.password }}')">
+        <span class="du-avatar" style="background:linear-gradient(135deg,#1a3a6b,#2d7af6)">{{ a.nickname[:1] }}</span>
+        <span class="du-info">
+          <span class="du-name">{{ a.nickname }} <span class="badge-admin">管理员</span></span>
+          <span class="du-desc">{{ a.email }} · 可管理内容</span>
+        </span>
+        <span style="color:var(--c-primary);font-size:13px;font-weight:600">填充</span>
+      </button>
+      {% endfor %}
+    </div>
+    <p class="login-note">点击演示账号可自动填充邮箱密码，再点「登录」即可体验。</p>
   </div>
 </div>
+
+<script>
+function fillDemo(email, pwd){
+  document.querySelector('input[name="email"]').value = email;
+  document.querySelector('input[name="password"]').value = pwd;
+}
+</script>
 {% endblock %}

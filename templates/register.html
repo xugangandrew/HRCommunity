@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}注册 · {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>注册{{ site.name }}</h2>
+    <p class="sub">加入 HR 专业社群，获取资讯、资料与工具</p>
+
+    <form method="post" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label>邮箱 <span class="req">*</span></label>
+        <input type="email" name="email" class="form-control" required autofocus
+               placeholder="用于登录，如 you@example.com">
+      </div>
+      <div class="form-group">
+        <label>昵称 <span class="req">*</span></label>
+        <input type="text" name="nickname" class="form-control" required
+               placeholder="社群中展示的名字">
+      </div>
+      <div class="form-group">
+        <label>密码 <span class="req">*</span></label>
+        <input type="password" name="password" class="form-control" required
+               placeholder="至少 6 位" minlength="6">
+      </div>
+      <div class="form-group">
+        <label>确认密码 <span class="req">*</span></label>
+        <input type="password" name="password2" class="form-control" required
+               placeholder="再次输入密码" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:16px">注 册</button>
+    </form>
+
+    <div style="text-align:center;margin-top:16px;font-size:14px">
+      已有账号？<a href="{{ url_for('login') }}">直接登录 →</a>
+    </div>
+    <p class="login-note">注册后即可浏览全部内容，普通成员可下载资料、查看工具。</p>
+  </div>
+</div>
+{% endblock %}

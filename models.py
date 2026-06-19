@@ -81,17 +81,22 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
-    # ---------- 用户表 ----------
+    # ---------- 用户表（邮箱注册登录）----------
+    # 若旧表结构不含 email 列（微信版遗留），先删除重建
+    cols = [r[1] for r in c.execute("PRAGMA table_info(users)").fetchall()] if c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").fetchone() else []
+    if cols and "email" not in cols:
+        c.execute("DROP TABLE users")
+
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        openid      TEXT UNIQUE,                 -- 微信 openid（演示模式用模拟值）
-        unionid     TEXT,
-        nickname    TEXT NOT NULL,
-        avatar      TEXT,
-        role        TEXT NOT NULL DEFAULT 'member',  -- member / admin
-        created_at  TEXT NOT NULL,
-        last_login  TEXT
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        email         TEXT UNIQUE NOT NULL,          -- 登录邮箱
+        password_hash TEXT NOT NULL,                 -- 密码哈希(werkzeug)
+        nickname      TEXT NOT NULL,                 -- 昵称
+        avatar        TEXT,
+        role          TEXT NOT NULL DEFAULT 'member',-- member / admin
+        created_at    TEXT NOT NULL,
+        last_login    TEXT
     )
     """)
 
@@ -120,23 +125,24 @@ def init_db():
     # ---------- 示例数据 ----------
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 管理员
-    c.execute("SELECT id FROM users WHERE openid=?", ("admin_shenlan",))
-    if not c.fetchone():
-        c.execute(
-            "INSERT INTO users(openid,nickname,avatar,role,created_at,last_login) VALUES(?,?,?,?,?,?)",
-            ("admin_shenlan", "深蓝管理员", None, "admin", now, now),
-        )
+    from werkzeug.security import generate_password_hash
 
-    # 演示用户
-    c.execute("SELECT id FROM users WHERE openid=?", ("demo_hr_001",))
-    if not c.fetchone():
-        c.execute(
-            "INSERT INTO users(openid,nickname,avatar,role,created_at,last_login) VALUES(?,?,?,?,?,?)",
-            ("demo_hr_001", "Helen(演示HR)", None, "member", now, now),
-        )
+    # 示例用户（邮箱 + 密码哈希）
+    demo_accounts = [
+        ("admin@shenlan.community", "admin123", "深蓝管理员", "admin"),
+        ("helen@demo.com",  "demo123", "Helen", "member"),
+        ("david@demo.com",  "demo123", "David", "member"),
+        ("wendy@demo.com",  "demo123", "Wendy", "member"),
+    ]
+    for email, pwd, nick, role in demo_accounts:
+        c.execute("SELECT id FROM users WHERE email=?", (email,))
+        if not c.fetchone():
+            c.execute(
+                "INSERT INTO users(email,password_hash,nickname,avatar,role,created_at,last_login) VALUES(?,?,?,?,?,?,?)",
+                (email, generate_password_hash(pwd), nick, None, role, now, now),
+            )
 
-    admin_id = c.execute("SELECT id FROM users WHERE openid=?", ("admin_shenlan",)).fetchone()[0]
+    admin_id = c.execute("SELECT id FROM users WHERE email=?", ("admin@shenlan.community",)).fetchone()[0]
 
     # 示例内容（字段顺序：category,title,summary,content,cover,file_path,file_name,
     #            link,views,is_top,published,author_id,created_at,updated_at）
