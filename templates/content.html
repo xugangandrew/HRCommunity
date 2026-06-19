@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ cat_info.label }} · {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <a href="{{ url_for('index') }}" class="back-link">← 返回首页</a>
+  <h1>{{ cat_info.icon }} {{ cat_info.label }}</h1>
+  <p>共 {{ posts|length }} 条内容</p>
+</div>
+
+{% for p in posts %}
+<div class="list-item">
+  <div class="li-icon">{{ cat_info.icon }}</div>
+  <div class="li-body">
+    <h3>
+      {% if p['is_top'] %}<span class="top-tag">置顶</span> {% endif %}
+      <a href="{{ url_for('post_detail', pid=p['id']) }}">{{ p['title'] }}</a>
+    </h3>
+    <div class="li-summary">{{ p['summary'] }}</div>
+    <div class="li-meta">
+      <span>📅 {{ p['created_at'][:10] }}</span>
+      <span>👁 {{ p['views'] }} 次浏览</span>
+      {% if p['file_path'] %}<span class="file-tag">📎 {{ p['file_name'] or '含附件' }}</span>{% endif %}
+      {% if p['link'] %}<span>🔗 含外链</span>{% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px">
+  <p style="color:var(--c-text-light)">该分类暂无内容</p>
+</div>
+{% endfor %}
+{% endblock %}

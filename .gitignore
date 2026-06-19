@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 数据库（含用户数据，不入库）
+*.db
+*.db-journal
+
+# 用户上传的文件（保留示例文件，排除运行时上传）
+static/uploads/2026*
+static/uploads/*.pdf
+static/uploads/*.xlsx
+static/uploads/*.doc
+static/uploads/*.docx
+static/uploads/*.ppt
+static/uploads/*.pptx
+static/uploads/*.zip
+static/uploads/*.rar
+!static/uploads/.gitkeep
+
+# 环境与日志
+.env
+*.log
+nohup.out
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 沙箱/工具目录
+.codebuddy/
+preview/

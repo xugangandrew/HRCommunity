@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ post['title'] }} · {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+  <a href="{{ url_for('content_list', category=post['category']) }}" class="back-link">← 返回{{ categories[post['category']]['label'] }}</a>
+
+  <div class="detail-head">
+    <span class="detail-cat">{{ categories[post['category']]['icon'] }} {{ categories[post['category']]['label'] }}</span>
+    <h1>{{ post['title'] }}</h1>
+    <div class="detail-meta">
+      <span>📅 {{ post['created_at'][:10] }}</span>
+      <span>👁 {{ post['views'] }} 次浏览</span>
+      {% if post['is_top'] %}<span>📌 置顶</span>{% endif %}
+    </div>
+  </div>
+
+  {% if post['summary'] %}
+  <div style="background:var(--c-accent-light);border-radius:10px;padding:16px 20px;margin-bottom:24px;color:#1a4a8a;font-size:15px">
+    <strong>摘要：</strong>{{ post['summary'] }}
+  </div>
+  {% endif %}
+
+  <div class="detail-body">{{ post['content'] }}</div>
+
+  <div class="detail-actions">
+    {% if post['file_path'] %}
+    <a href="{{ url_for('download', pid=post['id']) }}" class="btn btn-primary">📥 下载附件：{{ post['file_name'] or '点击下载' }}</a>
+    {% endif %}
+    {% if post['link'] %}
+    <a href="{{ post['link'] }}" target="_blank" rel="noopener" class="btn btn-default">🔗 访问工具外链</a>
+    {% endif %}
+    <a href="{{ url_for('content_list', category=post['category']) }}" class="btn btn-default">返回列表</a>
+  </div>
+</div>
+{% endblock %}

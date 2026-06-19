@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ site.name }} · {{ site.slogan }}{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+  <h1>{{ site.name }}</h1>
+  <p>{{ site.slogan }}<br>{{ site.desc }}</p>
+  <div class="hero-actions">
+    {% if current_user %}
+      <a href="{{ url_for('content_list', category='news') }}" class="btn btn-primary">浏览信息资讯</a>
+      <a href="{{ url_for('content_list', category='tool') }}" class="btn btn-outline">查看效率工具</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="btn btn-primary">微信登录后查看</a>
+      <a href="#sections" class="btn btn-outline">了解社群</a>
+    {% endif %}
+  </div>
+</section>
+
+<!-- 头条 -->
+{% if headline %}
+<div class="headline">
+  <div class="tag">置顶 · {{ categories[headline['category']]['label'] }}</div>
+  <h2>{{ headline['title'] }}</h2>
+  <p>{{ headline['summary'] }}</p>
+  {% if current_user %}
+  <p style="margin-top:12px"><a href="{{ url_for('post_detail', pid=headline['id']) }}">查看全文 →</a></p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div id="sections">
+{% for cat, info in categories.items() %}
+  <h2 class="section-title">
+    <span class="icon">{{ info['icon'] }}</span>
+    {{ info['label'] }}
+    {% if current_user %}
+    <a class="more" href="{{ url_for('content_list', category=cat) }}">查看全部 →</a>
+    {% else %}
+    <span class="more">登录后可查看</span>
+    {% endif %}
+  </h2>
+  <div class="card-grid">
+    {% for p in sections[cat] %}
+    <div class="card">
+      <span class="card-cat">{{ info['icon'] }} {{ info['label'] }}</span>
+      <h3>
+        {% if current_user %}
+          <a href="{{ url_for('post_detail', pid=p['id']) }}" style="color:inherit">{{ p['title'] }}</a>
+        {% else %}
+          {{ p['title'] }}
+        {% endif %}
+      </h3>
+      <p>{{ p['summary'][:60] }}{% if p['summary']|length > 60 %}…{% endif %}</p>
+      <div class="card-meta">
+        <span>{{ p['created_at'][:10] }}</span>
+        <span class="views">{{ p['views'] }}</span>
+        {% if p['file_path'] %}<span style="color:#07c160">📎 含附件</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% endfor %}
+</div>
+{% endblock %}
